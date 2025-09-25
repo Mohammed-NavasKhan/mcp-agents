@@ -8,6 +8,7 @@ import asyncio
 import streamlit as st
 from dotenv import load_dotenv
 from langchain_mistralai.chat_models import ChatMistralAI
+from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from mcp_use import MCPClient, MCPAgent
 
 load_dotenv()
@@ -22,12 +23,18 @@ def get_agent_and_client(config_path: str):
             "Enter your Mistral API key: ")
 
     mcp_client = MCPClient.from_dict(config_path)
-    llm = ChatMistralAI(model="mistral-medium-2505")
+    llm = ChatMistralAI(
+        model="mistral-medium-2505",
+        callbacks=[StreamingStdOutCallbackHandler()],
+        max_tokens=4096,
+        temperature=0.7,
+        streaming=True
+    )
     agent = MCPAgent(
         llm=llm,
         client=mcp_client,
         max_steps=15,
-        memory_enabled=True,
+        memory_enabled=True
     )
     return agent, mcp_client
 
@@ -37,6 +44,8 @@ if "agent" not in st.session_state:
     st.session_state.agent = None
 if "messages" not in st.session_state:
     st.session_state.messages = []
+if "client" not in st.session_state:
+    st.session_state.client = None
 
 # Config for multi-server setup
 multi_server = {
@@ -74,7 +83,8 @@ config_map = {
 
 # Initialize agent if not already done
 if st.session_state.agent is None:
-    st.session_state.agent, _ = get_agent_and_client(multi_server)
+    st.session_state.agent, st.session_state.client = get_agent_and_client(
+        multi_server)
 
 # Display chat history
 for message in st.session_state.messages:
@@ -106,21 +116,30 @@ If no direct list command is available for GitHub, use the GitHub API through th
         prompt_with_instructions = f"{instructions}\n\n{prompt}"
 
         with st.chat_message("assistant"):
-            with st.spinner("Thinking..."):
+            response_placeholder = st.empty()
+            with st.spinner("Progressing..."):
                 try:
-                    response = asyncio.run(
-                        st.session_state.agent.run(prompt_with_instructions))
-                    st.write(response)
+                    async def get_response():
+                        return await st.session_state.agent.run(prompt_with_instructions)
+
+                    response = asyncio.run(get_response())
+                    response_placeholder.write(response)
                     st.session_state.messages.append(
                         {"role": "assistant", "content": response})
                 except Exception as e:
                     st.error(f"Error: {str(e)}")
+                    # Reset agent on error
+                    st.session_state.agent, st.session_state.client = get_agent_and_client(
+                        multi_server)
 
 # Add a button to close all sessions
 if st.sidebar.button("Close All Sessions"):
     try:
-        _, mcp_client = get_agent_and_client("./browser_mcp.json")
-        asyncio.run(mcp_client.close_all_sessions())
-        st.sidebar.success("All sessions closed successfully.")
+        if st.session_state.client:
+            asyncio.run(st.session_state.client.close_all_sessions())
+            st.sidebar.success("All sessions closed successfully.")
+            # Reset agent and client
+            st.session_state.agent = None
+            st.session_state.client = None
     except Exception as e:
         st.sidebar.error(f"Error closing sessions: {str(e)}")
