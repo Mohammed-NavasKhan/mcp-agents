@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "mcp-atlassian-http": {
+      "url": "http://localhost:9000/sse"
+    }
+  }
+}

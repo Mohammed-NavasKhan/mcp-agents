@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "airbnb": {
+      "command": "npx",
+      "args": ["-y", "@openbnb/mcp-server-airbnb", "--ignore-robots-txt"]
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "YOUR_DIRECTORY_HERE"
+      ]
+    }
+  }
+}
