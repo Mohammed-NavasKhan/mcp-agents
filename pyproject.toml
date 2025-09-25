@@ -10,4 +10,5 @@ dependencies = [
     "flask-cors>=6.0.1",
     "langchain-mistralai>=0.2.12",
     "mcp-use>=1.3.10",
+    "streamlit>=1.50.0",
 ]
