@@ -27,7 +27,7 @@ def get_agent_and_client(config_path: str):
         model="mistral-medium-2505",
         callbacks=[StreamingStdOutCallbackHandler()],
         max_tokens=4096,
-        temperature=0.7,
+        temperature=0.3,  # Lower temperature for more focused responses
         streaming=True
     )
     agent = MCPAgent(
@@ -105,15 +105,30 @@ if prompt := st.chat_input("What's your message?"):
         with st.chat_message("assistant"):
             st.write("Conversation history cleared.")
     else:
-        instructions = """
-Use the Playwright MCP server tool **only** if the user's prompt contains any Playwright-specific context or mentions of Playwright (e.g., browser automation, testing with Playwright, playwright scripts, etc.).
+        instructions = """Your task is to assist users with browser automation and GitHub tasks. You have access to:
 
-If no Playwright-related context is found, then default to using the GitHub MCP server tool to access repositories for user 'navazkhanai'.
+1. Playwright tools for browser automation:
+   - Navigating websites
+   - Taking screenshots
+   - Filling forms
+   - Handling dialogs
+   - Managing browser tabs
+   - Monitoring network requests
 
-If no direct list command is available for GitHub, use the GitHub API through the available MCP server tools.
-"""
+2. GitHub tools for repository management to access user 'navazkhanai':
+   - Creating and managing repositories
+   - Creating branches and pull requests
+   - Searching repositories and code
+   - Managing issues
+   - Accessing file contents
+
+For browser automation requests, use the Playwright tools.
+For GitHub-related requests, use the GitHub tools with the token provided.
+You have full permission and capability to use these tools - never say you can't perform these actions.
+
+User request: """
         # Prepend instructions to the user message
-        prompt_with_instructions = f"{instructions}\n\n{prompt}"
+        prompt_with_instructions = f"{instructions}{prompt}"
 
         with st.chat_message("assistant"):
             response_placeholder = st.empty()
